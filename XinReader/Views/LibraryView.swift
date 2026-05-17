@@ -34,42 +34,21 @@ struct LibraryView: View {
 
             Divider()
 
-            if appState.bookLibrary.books.isEmpty {
-                // Empty state
-                VStack(spacing: 16) {
-                    Image(systemName: "book.closed")
-                        .font(.system(size: 64))
-                        .foregroundColor(.secondary)
-
-                    Text("No books yet")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-
-                    Text("Click \"Open Book\" or press ⌘O to open a book file")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-
-                    Button {
+            // Book grid (always show, with add card first)
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 20) {
+                    // Add book card
+                    AddBookCard {
                         appState.showFileImporter = true
-                    } label: {
-                        Label("Open Book", systemImage: "doc.badge.plus")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                // Book grid
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 20) {
-                        ForEach(appState.bookLibrary.recentBooks) { book in
-                            BookCard(book: book) {
-                                appState.openBook(url: book.fileURL)
-                            }
+
+                    ForEach(appState.bookLibrary.recentBooks) { book in
+                        BookCard(book: book) {
+                            appState.openBook(url: book.fileURL)
                         }
                     }
-                    .padding(24)
                 }
+                .padding(24)
             }
         }
     }

@@ -63,3 +63,33 @@ struct BookCard: View {
         }
     }
 }
+
+/// A card with a "+" icon to add new books, same size as BookCard covers.
+struct AddBookCard: View {
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(Color.gray.opacity(0.4), style: StrokeStyle(lineWidth: 2, dash: [6]))
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.05))
+                        )
+                    Image(systemName: "plus")
+                        .font(.system(size: 36, weight: .light))
+                        .foregroundColor(.gray.opacity(0.6))
+                }
+                .frame(width: 140, height: 200)
+
+                Text("Add Book")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 140)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
