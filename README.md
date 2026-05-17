@@ -46,6 +46,41 @@ swift run      # 运行
 open Package.swift
 ```
 
+### 打包 DMG
+
+```bash
+cd /path/to/XinReader
+
+# 1. 编译 Release Universal Binary (arm64 + x86_64)
+swift build -c release --arch arm64 --arch x86_64
+
+# 2. 创建 .app bundle 目录结构
+mkdir -p dist/XinReader.app/Contents/MacOS
+mkdir -p dist/XinReader.app/Contents/Resources
+
+# 3. 复制二进制到 .app
+cp .build/apple/Products/Release/XinReader dist/XinReader.app/Contents/MacOS/
+
+# 4. 创建 Info.plist (如果 dist/XinReader.app/Contents/Info.plist 不存在)
+#    参考项目中已有的 dist/XinReader.app/Contents/Info.plist
+
+# 5. (可选) 生成应用图标
+#    将 1024x1024 的 PNG 图片按要求缩放为 iconset，再用 iconutil 转换：
+#    iconutil -c icns /path/to/XinReader.iconset -o dist/XinReader.app/Contents/Resources/AppIcon.icns
+
+# 6. 打包 DMG
+rm -rf /tmp/dmg_content && mkdir -p /tmp/dmg_content
+cp -R dist/XinReader.app /tmp/dmg_content/
+ln -sf /Applications /tmp/dmg_content/Applications
+hdiutil create -volname "XinReader" -srcfolder /tmp/dmg_content -ov -format UDZO dist/XinReader.dmg
+
+# 产出：dist/XinReader.dmg
+```
+
+安装时双击 DMG → 拖动 XinReader.app 到 Applications → 完成。
+
+> **注意**：未签名的应用首次打开需右键 → "Open" → 确认，或在 System Settings → Privacy & Security 中允许。
+
 ## 技术架构
 
 ```
