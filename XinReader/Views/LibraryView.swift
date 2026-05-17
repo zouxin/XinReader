@@ -24,7 +24,6 @@ struct LibraryView: View {
             )
             .navigationSplitViewColumnWidth(min: 140, ideal: 180, max: 240)
         } detail: {
-            // Right: book grid
             VStack(spacing: 0) {
                 // Header
                 HStack {
@@ -123,6 +122,7 @@ struct LibraryView: View {
                     .padding(24)
                 }
             }
+            .background(Color(red: 0.98, green: 0.95, blue: 0.87))
         }
         .alert("New Tag", isPresented: $showNewTagAlert) {
             TextField("Tag name", text: $newTagName)
