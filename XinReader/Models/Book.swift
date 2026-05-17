@@ -13,6 +13,7 @@ struct Book: Identifiable, Codable {
     var publisher: String?
     var coverImageData: Data?
     var format: BookFormat?
+    var tags: [String] = []
 
     // Timestamps
     var addedDate: Date
@@ -28,6 +29,7 @@ struct Book: Identifiable, Codable {
         publisher: String? = nil,
         coverImageData: Data? = nil,
         format: BookFormat? = nil,
+        tags: [String] = [],
         addedDate: Date = Date(),
         lastOpenedDate: Date? = nil
     ) {
@@ -40,6 +42,7 @@ struct Book: Identifiable, Codable {
         self.publisher = publisher
         self.coverImageData = coverImageData
         self.format = format
+        self.tags = tags
         self.addedDate = addedDate
         self.lastOpenedDate = lastOpenedDate
     }

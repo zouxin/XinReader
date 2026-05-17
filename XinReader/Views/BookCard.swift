@@ -57,11 +57,6 @@ struct BookCard: View {
             }
         }
         .buttonStyle(.plain)
-        .contextMenu {
-            Button("Remove from Library", role: .destructive) {
-                onRemove?()
-            }
-        }
     }
 }
 
