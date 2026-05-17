@@ -16,18 +16,22 @@ struct HTMLCleaner {
     ///   - css: Dynamic CSS string from ReaderStyleSheet
     /// - Returns: Complete HTML document ready for WKWebView
     static func prepare(html: String, css: String) -> String {
+        // For EPUB content that's already clean, skip expensive regex passes
+        let needsMobiCleanup = html.contains("recindex") || html.contains("kindle:embed") || html.contains("<mbp:")
+
         var processed = html
 
-        // 1. Rewrite image tags: <img recindex="00001"> → <img src="bookimage://recindex:00001">
-        processed = rewriteImageTags(processed)
+        if needsMobiCleanup {
+            // 1. Rewrite MOBI image tags
+            processed = rewriteImageTags(processed)
+            // 2. Fix MOBI-specific HTML issues
+            processed = fixMalformedHTML(processed)
+        } else {
+            // EPUB: only strip scripts (content is already well-formed XHTML)
+            processed = stripScriptTags(processed)
+        }
 
-        // 2. Inject anchor IDs at headings (for TOC navigation)
-        processed = injectHeadingAnchors(processed)
-
-        // 3. Fix common HTML issues in MOBI files
-        processed = fixMalformedHTML(processed)
-
-        // 4. Wrap in template
+        // 3. Wrap in template (always needed)
         return wrapInTemplate(content: processed, css: css)
     }
 
@@ -110,6 +114,20 @@ struct HTMLCleaner {
     }
 
     // MARK: - HTML Fixes
+
+    /// Remove <script> tags from content to prevent template breakage.
+    private static func stripScriptTags(_ html: String) -> String {
+        guard let regex = try? NSRegularExpression(
+            pattern: #"<script[^>]*>[\s\S]*?</script>"#,
+            options: .caseInsensitive
+        ) else { return html }
+        let nsHTML = html as NSString
+        return regex.stringByReplacingMatches(
+            in: html,
+            range: NSRange(location: 0, length: nsHTML.length),
+            withTemplate: ""
+        )
+    }
 
     /// Fix common malformed HTML issues in MOBI files.
     private static func fixMalformedHTML(_ html: String) -> String {

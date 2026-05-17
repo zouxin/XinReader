@@ -25,23 +25,31 @@ enum EPUBContentAssembler {
         var htmlParts: [String] = []
         var images: [String: Data] = [:]
 
-        // 1. Collect all images from manifest
+        // 1. Extract images — each file extracted only once, mapped to multiple keys
+        var extracted: [String: Data] = [:] // archivePath → data (deduplicated)
         for (_, item) in opf.manifest where item.mediaType.hasPrefix("image/") {
             let fullPath = resolvePath(item.href, basePath: basePath)
-            if let data = readEntry(archive: archive, path: fullPath) {
-                // Store with multiple keys for flexible lookup
-                images[item.href] = data
-                let filename = (item.href as NSString).lastPathComponent
-                images[filename] = data
-                // Also store with full path from root
-                images[fullPath] = data
+            if extracted[fullPath] == nil {
+                if let data = readEntry(archive: archive, path: fullPath) {
+                    extracted[fullPath] = data
+                }
             }
+        }
+        // Build lookup with multiple keys pointing to the same data
+        for (_, item) in opf.manifest where item.mediaType.hasPrefix("image/") {
+            let fullPath = resolvePath(item.href, basePath: basePath)
+            guard let data = extracted[fullPath] else { continue }
+            images[item.href] = data
+            images[(item.href as NSString).lastPathComponent] = data
+            images[fullPath] = data
         }
 
         // 2. Process spine items in reading order
         guard !opf.spine.isEmpty else {
             throw EPUBError.spineEmpty
         }
+
+        htmlParts.reserveCapacity(opf.spine.count)
 
         for spineItem in opf.spine {
             guard let manifestItem = opf.manifest[spineItem.idref] else { continue }

@@ -34,10 +34,20 @@ final class HTMLCleanerTests: XCTestCase {
         XCTAssertTrue(result.contains("<p>more</p>"))
     }
 
-    func testFixesBrTags() {
-        let html = "<p>line1<br>line2</p>"
+    func testFixesBrTagsForMobiContent() {
+        // MOBI content triggers full cleanup (contains "recindex")
+        let html = "<p>line1<br>line2</p><img recindex=\"1\">"
         let result = HTMLCleaner.prepare(html: html, css: "")
         XCTAssertTrue(result.contains("<br/>"))
+    }
+
+    func testEPUBContentSkipsMobiCleanup() {
+        // EPUB content (no recindex/kindle/mbp markers) takes fast path
+        let html = "<p>line1<br>line2</p>"
+        let result = HTMLCleaner.prepare(html: html, css: "")
+        // Should still produce valid output, just not fix <br>
+        XCTAssertTrue(result.contains("<!DOCTYPE html>"))
+        XCTAssertTrue(result.contains("<p>line1"))
     }
 
     func testContainsPaginationJS() {
