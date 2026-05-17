@@ -13,6 +13,7 @@ final class AppState: ObservableObject {
     @Published var currentPageIndex: Int = 0
     @Published var totalPageCount: Int = 1
     @Published var chapterPageMap: [String: Int] = [:]  // chapterAnchor → page number
+    @Published var lastReadBook: Book?                   // last book before returning to library
 
     let settingsStore = SettingsStore()
     let progressStore = ProgressStore()

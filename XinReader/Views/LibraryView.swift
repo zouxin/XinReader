@@ -38,6 +38,26 @@ struct LibraryView: View {
                     }
 
                     Spacer()
+
+                    // Continue reading last book
+                    if let lastBook = appState.lastReadBook {
+                        Button {
+                            appState.openBook(url: lastBook.fileURL)
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "book.fill")
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text("Continue Reading")
+                                        .font(.system(size: 11))
+                                    Text(lastBook.title.prefix(20))
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 }
                 .padding(24)
 

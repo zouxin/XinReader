@@ -9,6 +9,7 @@ struct ReaderToolbar: View {
     var body: some View {
         // Back to Library
         Button {
+            appState.lastReadBook = appState.currentBookMeta
             appState.currentBook = nil
             appState.currentBookMeta = nil
             appState.chapters = []
