@@ -27,6 +27,13 @@ final class AppState: ObservableObject {
                 self?.objectWillChange.send()
             }
         }.store(in: &cancellables)
+
+        // Forward bookLibrary changes to trigger view updates
+        bookLibrary.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.objectWillChange.send()
+            }
+        }.store(in: &cancellables)
     }
 
     /// Open and parse a book file (MOBI, EPUB, or PDF)
