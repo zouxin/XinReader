@@ -162,8 +162,6 @@ struct HTMLCleaner {
             var currentPage = 0;
             var totalPages = 1;
             var stepWidth = 0;          // how many pixels to advance per page turn
-            var wheelAccum = 0;
-            var wheelTimer = null;
 
             function C() { return document.getElementById('book-content'); }
 
@@ -325,27 +323,28 @@ struct HTMLCleaner {
                 try {
                     window.webkit.messageHandlers.scrollHandler.postMessage({
                         percent: window.getScrollPercent(),
-                        anchor: window.getCurrentAnchor()
+                        anchor: window.getCurrentAnchor(),
+                        currentPage: currentPage,
+                        totalPages: totalPages
                     });
                 } catch(e){}
             }
 
             // ─── input handling ─────────────────────────────────
+            // Wheel: single event = single page turn, with cooldown to avoid rapid-fire
+            var wheelCooldown = false;
             document.addEventListener('wheel', function(e) {
                 e.preventDefault();
-                wheelAccum += e.deltaY;
-                clearTimeout(wheelTimer);
-                wheelTimer = setTimeout(function() {
-                    if (wheelAccum > 20) next();
-                    else if (wheelAccum < -20) prev();
-                    wheelAccum = 0;
-                }, 60);
+                if (wheelCooldown) return;
+                if (e.deltaY > 2) { next(); wheelCooldown = true; }
+                else if (e.deltaY < -2) { prev(); wheelCooldown = true; }
+                if (wheelCooldown) setTimeout(function(){ wheelCooldown = false; }, 250);
             }, {passive:false});
 
             document.addEventListener('keydown', function(e) {
                 var k = e.key;
-                if (k==='ArrowRight'||k===' '||k==='PageDown')  { e.preventDefault(); next(); }
-                if (k==='ArrowLeft'||k==='Backspace'||k==='PageUp') { e.preventDefault(); prev(); }
+                if (k==='ArrowRight'||k==='ArrowDown'||k===' '||k==='PageDown')  { e.preventDefault(); next(); }
+                if (k==='ArrowLeft'||k==='ArrowUp'||k==='Backspace'||k==='PageUp') { e.preventDefault(); prev(); }
                 if (k==='Home') { e.preventDefault(); goTo(0); }
                 if (k==='End')  { e.preventDefault(); goTo(totalPages-1); }
             });

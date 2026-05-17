@@ -8,6 +8,7 @@ struct WebContentView: NSViewRepresentable {
     let settings: ReaderSettings
     @Binding var selectedChapter: Chapter?
     var onScrollChange: ((Double, String?) -> Void)?
+    var onPageInfo: ((Int, Int) -> Void)?       // (currentPage, totalPages)
     var initialScrollPercent: Double
 
     func makeCoordinator() -> Coordinator {
@@ -103,8 +104,13 @@ struct WebContentView: NSViewRepresentable {
 
             let percent = body["percent"] as? Double ?? 0.0
             let anchor = body["anchor"] as? String
+            let page = body["currentPage"] as? Int
+            let total = body["totalPages"] as? Int
 
             parent.onScrollChange?(percent, anchor)
+            if let p = page, let t = total {
+                parent.onPageInfo?(p, t)
+            }
         }
     }
 }

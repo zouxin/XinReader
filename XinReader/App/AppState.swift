@@ -10,6 +10,8 @@ final class AppState: ObservableObject {
     @Published var showFileImporter: Bool = false
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var currentPageIndex: Int = 0
+    @Published var totalPageCount: Int = 1
 
     let settingsStore = SettingsStore()
     let progressStore = ProgressStore()
