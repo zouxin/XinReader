@@ -35,6 +35,15 @@ final class BookLibrary: ObservableObject {
         loadTags()
     }
 
+    /// Testable initializer with custom base directory.
+    init(baseDirectory: URL) {
+        try? FileManager.default.createDirectory(at: baseDirectory, withIntermediateDirectories: true)
+        libraryURL = baseDirectory.appendingPathComponent("library.json")
+        tagsURL = baseDirectory.appendingPathComponent("tags.json")
+        loadBooks()
+        loadTags()
+    }
+
     // MARK: - Book Methods
 
     /// Add a new book or update an existing one (by file URL).
