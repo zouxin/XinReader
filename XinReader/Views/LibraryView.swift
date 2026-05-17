@@ -110,6 +110,15 @@ struct LibraryView: View {
                                     Label("Show in Finder", systemImage: "folder")
                                 }
 
+                                Button {
+                                    let query = book.title.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? book.title
+                                    if let url = URL(string: "https://www.douban.com/search?cat=1001&q=\(query)") {
+                                        NSWorkspace.shared.open(url)
+                                    }
+                                } label: {
+                                    Label("View on Douban", systemImage: "star.circle")
+                                }
+
                                 Divider()
 
                                 Button("Remove from Library", role: .destructive) {
