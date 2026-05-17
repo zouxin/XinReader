@@ -121,6 +121,66 @@ final class BookLibraryTests: XCTestCase {
         XCTAssertEqual(library2.books.first?.tags, ["Tech"])
     }
 
+    /// Regression: URL encoding differences must not create duplicates
+    func testAddOrUpdateMatchesDifferentURLEncodings() {
+        // Simulate a path with Chinese characters
+        let path = "/Users/test/电子书/县乡中国.epub"
+        let book = makeBook(title: "County", path: path)
+        library.addOrUpdate(book)
+        library.addTag("社会")
+        library.addTag("社会", to: book.id)
+        XCTAssertEqual(library.books.count, 1)
+        XCTAssertEqual(library.books.first?.tags, ["社会"])
+
+        // Reopen with same path — should match, not duplicate
+        let reopened = Book(
+            fileURL: URL(fileURLWithPath: path),
+            title: "County Updated",
+            author: "Author"
+        )
+        library.addOrUpdate(reopened)
+        XCTAssertEqual(library.books.count, 1) // No duplicate!
+        XCTAssertEqual(library.books.first?.tags, ["社会"]) // Tags preserved
+        XCTAssertEqual(library.books.first?.title, "County Updated") // Title updated
+    }
+
+    /// URL with percent-encoding vs without must still match
+    func testAddOrUpdateMatchesPercentEncodedURL() {
+        // First add with a regular file URL
+        let regularURL = URL(fileURLWithPath: "/Users/test/Books/My Book.epub")
+        let book = Book(fileURL: regularURL, title: "Book", author: "A")
+        library.addOrUpdate(book)
+        library.addTag("Fiction")
+        library.addTag("Fiction", to: book.id)
+
+        // Reopen with same path from different URL construction
+        let sameURL = URL(fileURLWithPath: "/Users/test/Books/My Book.epub")
+        let reopened = Book(fileURL: sameURL, title: "Book v2", author: "A")
+        library.addOrUpdate(reopened)
+
+        XCTAssertEqual(library.books.count, 1)
+        XCTAssertEqual(library.books.first?.tags, ["Fiction"])
+    }
+
+    /// Tagged book must NOT appear in uncategorizedBooks
+    func testTaggedBookNotInUncategorized() {
+        let a = makeBook(title: "Tagged", path: "/a.epub")
+        let b = makeBook(title: "Untagged", path: "/b.epub")
+        library.addOrUpdate(a)
+        library.addOrUpdate(b)
+        library.addTag("Fiction")
+        library.addTag("Fiction", to: a.id)
+
+        // After addOrUpdate (simulating reopen), tags must persist
+        let reopened = Book(fileURL: URL(fileURLWithPath: "/a.epub"), title: "Tagged", author: "A")
+        library.addOrUpdate(reopened)
+
+        XCTAssertEqual(library.uncategorizedBooks.count, 1)
+        XCTAssertEqual(library.uncategorizedBooks.first?.title, "Untagged")
+        XCTAssertEqual(library.books(withTag: "Fiction").count, 1)
+        XCTAssertEqual(library.books(withTag: "Fiction").first?.title, "Tagged")
+    }
+
     func testRemoveBook() {
         let book = makeBook(title: "ToRemove")
         library.addOrUpdate(book)

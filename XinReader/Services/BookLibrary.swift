@@ -46,10 +46,12 @@ final class BookLibrary: ObservableObject {
 
     // MARK: - Book Methods
 
-    /// Add a new book or update an existing one (by file URL).
+    /// Add a new book or update an existing one (by file path).
     /// Preserves existing tags and format when updating.
+    /// Uses standardized file path for comparison to handle URL encoding differences.
     func addOrUpdate(_ book: Book) {
-        if let index = books.firstIndex(where: { $0.fileURL == book.fileURL }) {
+        let newPath = book.fileURL.standardizedFileURL.path
+        if let index = books.firstIndex(where: { $0.fileURL.standardizedFileURL.path == newPath }) {
             books[index].lastOpenedDate = Date()
             books[index].title = book.title
             books[index].author = book.author
@@ -68,7 +70,8 @@ final class BookLibrary: ObservableObject {
 
     /// Remove a book from the library.
     func remove(_ book: Book) {
-        books.removeAll { $0.id == book.id }
+        let path = book.fileURL.standardizedFileURL.path
+        books.removeAll { $0.fileURL.standardizedFileURL.path == path }
         saveBooks()
     }
 

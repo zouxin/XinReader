@@ -64,7 +64,8 @@ final class AppState: ObservableObject {
                     self?.bookLibrary.addOrUpdate(bookMeta)
 
                     // Use the library's copy which preserves tags
-                    let storedBook = self?.bookLibrary.books.first(where: { $0.fileURL == url })
+                    let urlPath = url.standardizedFileURL.path
+                    let storedBook = self?.bookLibrary.books.first(where: { $0.fileURL.standardizedFileURL.path == urlPath })
                     self?.currentBookMeta = storedBook ?? bookMeta
                     self?.isLoading = false
 
