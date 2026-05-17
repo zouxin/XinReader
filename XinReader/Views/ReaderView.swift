@@ -18,9 +18,12 @@ struct ReaderView: View {
                 onScrollChange: { percent, anchor in
                     appState.saveProgress(scrollPercentage: percent, chapterAnchor: anchor)
                 },
-                onPageInfo: { page, total in
+                onPageInfo: { page, total, chapMap in
                     appState.currentPageIndex = page
                     appState.totalPageCount = total
+                    if !chapMap.isEmpty {
+                        appState.chapterPageMap = chapMap
+                    }
                 },
                 initialScrollPercent: loadInitialScroll()
             )

@@ -8,7 +8,7 @@ struct WebContentView: NSViewRepresentable {
     let settings: ReaderSettings
     @Binding var selectedChapter: Chapter?
     var onScrollChange: ((Double, String?) -> Void)?
-    var onPageInfo: ((Int, Int) -> Void)?       // (currentPage, totalPages)
+    var onPageInfo: ((Int, Int, [String: Int]) -> Void)?  // (currentPage, totalPages, chapterPageMap)
     var initialScrollPercent: Double
 
     func makeCoordinator() -> Coordinator {
@@ -109,7 +109,11 @@ struct WebContentView: NSViewRepresentable {
 
             parent.onScrollChange?(percent, anchor)
             if let p = page, let t = total {
-                parent.onPageInfo?(p, t)
+                var chapMap: [String: Int] = [:]
+                if let rawMap = body["chapterPages"] as? [String: Int] {
+                    chapMap = rawMap
+                }
+                parent.onPageInfo?(p, t, chapMap)
             }
         }
     }

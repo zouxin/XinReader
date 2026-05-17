@@ -14,7 +14,6 @@ struct SidebarView: View {
                 Text("目录")
                     .font(.headline)
                 Spacer()
-                // Reading progress
                 Text(progressText)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.secondary)
@@ -51,7 +50,11 @@ struct SidebarView: View {
             } else {
                 List(selection: $selectedChapter) {
                     ForEach(chapters) { chapter in
-                        ChapterRow(chapter: chapter)
+                        ChapterRow(
+                            chapter: chapter,
+                            chapterPageMap: appState.chapterPageMap,
+                            totalPages: appState.totalPageCount
+                        )
                     }
                 }
                 .listStyle(.sidebar)
@@ -73,12 +76,18 @@ struct SidebarView: View {
 /// A single chapter row, supporting nested children via DisclosureGroup.
 struct ChapterRow: View {
     let chapter: Chapter
+    let chapterPageMap: [String: Int]
+    let totalPages: Int
 
     var body: some View {
         if chapter.isExpandable {
             DisclosureGroup {
                 ForEach(chapter.children) { child in
-                    ChapterRow(chapter: child)
+                    ChapterRow(
+                        chapter: child,
+                        chapterPageMap: chapterPageMap,
+                        totalPages: totalPages
+                    )
                 }
             } label: {
                 chapterLabel
@@ -90,9 +99,55 @@ struct ChapterRow: View {
     }
 
     private var chapterLabel: some View {
-        Text(chapter.title)
-            .font(.system(size: 13))
-            .lineLimit(2)
-            .padding(.vertical, 2)
+        HStack {
+            Text(chapter.title)
+                .font(.system(size: 13))
+                .lineLimit(2)
+            Spacer()
+            if let pageInfo = chapterPageInfo {
+                Text(pageInfo)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// Look up this chapter's page number from the map.
+    /// Try htmlAnchor directly, then common epub_ prefixed variants.
+    private var chapterPageInfo: String? {
+        guard totalPages > 1 else { return nil }
+
+        let page = findPage()
+        guard let p = page else { return nil }
+
+        let percent = Int(Double(p) / Double(totalPages - 1) * 100)
+        return "p.\(p + 1) \(percent)%"
+    }
+
+    private func findPage() -> Int? {
+        // Direct match on htmlAnchor
+        if let p = chapterPageMap[chapter.htmlAnchor] { return p }
+
+        // Try matching by filename/basename from the anchor
+        let anchor = chapter.htmlAnchor
+        let filename = (anchor as NSString).lastPathComponent
+        let basename = (filename as NSString).deletingPathExtension
+
+        // Scan map keys for match
+        for (key, page) in chapterPageMap {
+            let keyFile = (key as NSString).lastPathComponent
+            let keyBase = (keyFile as NSString).deletingPathExtension
+            if keyFile == filename || keyBase == basename {
+                return page
+            }
+            // epub_ prefixed id
+            if key.hasPrefix("epub_") && key.lowercased().contains(basename.lowercased()) {
+                return page
+            }
+        }
+
+        return nil
     }
 }

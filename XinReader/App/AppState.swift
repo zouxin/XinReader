@@ -12,6 +12,7 @@ final class AppState: ObservableObject {
     @Published var errorMessage: String?
     @Published var currentPageIndex: Int = 0
     @Published var totalPageCount: Int = 1
+    @Published var chapterPageMap: [String: Int] = [:]  // chapterAnchor → page number
 
     let settingsStore = SettingsStore()
     let progressStore = ProgressStore()

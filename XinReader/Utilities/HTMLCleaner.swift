@@ -321,11 +321,31 @@ struct HTMLCleaner {
             }
             function report() {
                 try {
+                    // Calculate which page each chapter element is on
+                    var chapPages = {};
+                    var c = C();
+                    if (c && stepWidth > 0) {
+                        var saved = c.scrollLeft;
+                        c.scrollLeft = 0;
+                        void c.scrollWidth;
+                        var secs = c.querySelectorAll('.epub-section[id], h1[id], h2[id], h3[id], [data-href]');
+                        for (var i = 0; i < secs.length; i++) {
+                            var id = secs[i].id || secs[i].getAttribute('data-href') || '';
+                            if (id) {
+                                var left = secs[i].offsetLeft;
+                                var p = secs[i].offsetParent;
+                                while (p && p !== c && p !== document.body) { left += p.offsetLeft; p = p.offsetParent; }
+                                chapPages[id] = Math.floor(left / stepWidth);
+                            }
+                        }
+                        c.scrollLeft = saved;
+                    }
                     window.webkit.messageHandlers.scrollHandler.postMessage({
                         percent: window.getScrollPercent(),
                         anchor: window.getCurrentAnchor(),
                         currentPage: currentPage,
-                        totalPages: totalPages
+                        totalPages: totalPages,
+                        chapterPages: chapPages
                     });
                 } catch(e){}
             }
