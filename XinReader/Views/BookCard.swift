@@ -4,6 +4,7 @@ import SwiftUI
 struct BookCard: View {
     let book: Book
     let onTap: () -> Void
+    var onRemove: (() -> Void)?
 
     var body: some View {
         Button(action: onTap) {
@@ -58,7 +59,7 @@ struct BookCard: View {
         .buttonStyle(.plain)
         .contextMenu {
             Button("Remove from Library", role: .destructive) {
-                // Remove handled by parent
+                onRemove?()
             }
         }
     }

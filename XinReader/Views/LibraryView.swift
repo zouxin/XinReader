@@ -43,9 +43,12 @@ struct LibraryView: View {
                     }
 
                     ForEach(appState.bookLibrary.recentBooks) { book in
-                        BookCard(book: book) {
+                        BookCard(book: book, onTap: {
                             appState.openBook(url: book.fileURL)
-                        }
+                        }, onRemove: {
+                            appState.bookLibrary.remove(book)
+                            appState.progressStore.delete(for: book.id)
+                        })
                     }
                 }
                 .padding(24)
