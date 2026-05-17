@@ -38,13 +38,6 @@ struct LibraryView: View {
                     }
 
                     Spacer()
-
-                    Button {
-                        appState.showFileImporter = true
-                    } label: {
-                        Label("Open Book", systemImage: "plus")
-                    }
-                    .buttonStyle(.borderedProminent)
                 }
                 .padding(24)
 
@@ -88,6 +81,14 @@ struct LibraryView: View {
                                         Text("No tags yet")
                                             .foregroundColor(.secondary)
                                     }
+                                }
+
+                                Divider()
+
+                                Button {
+                                    NSWorkspace.shared.selectFile(book.fileURL.path, inFileViewerRootedAtPath: book.fileURL.deletingLastPathComponent().path)
+                                } label: {
+                                    Label("Show in Finder", systemImage: "folder")
                                 }
 
                                 Divider()
