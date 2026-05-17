@@ -85,8 +85,8 @@
 - 解决了"显示3页/首尾各半页"的对齐问题
 
 ### 输入处理
-- 鼠标滚轮: 累积 deltaY + 60ms 防抖，兼容 trackpad
-- 键盘: ← → Space Backspace PageUp PageDown Home End
+- 鼠标滚轮: 单次 wheel 事件直接翻页，250ms 冷却防连发
+- 键盘: ← → ↑ ↓ Space Backspace PageUp PageDown Home End
 - 页码指示器: 底部居中显示 "当前页 / 总页数"
 
 ### 目录跳转
@@ -102,3 +102,32 @@
 - `recalc()` 中 gap/width 安全检查
 - 初始化轮询 (最多20次 × 100ms) 等待容器渲染
 - `fixMalformedHTML` 清理内容中的 `<script>` 标签防止模板破坏
+
+---
+
+## 2026-05-17 — 阅读进度 + 书库增强
+
+### 阅读进度显示
+- 目录标题栏显示当前页码/总页数和百分比 (如 `3/42  7%`)
+- 目录栏顶部进度条
+- 每个章节右侧显示该章所在页码和百分比 (如 `p.12 28%`)
+- JS `calcChapterPages()` 在 recalc 时缓存所有章节页码映射
+- 通过 WKWebView message handler 传递 `chapterPages` 字典给 Swift
+
+### 书库标签分类
+- `Book` 模型新增 `tags: [String]` 字段
+- `BookLibrary` 新增标签 CRUD 和按书标签管理
+- 标签持久化到 `~/Library/Application Support/XinReader/tags.json`
+- 书库改为 `NavigationSplitView`：左侧标签栏 + 右侧书籍网格
+- 内置"全部"和"未分类"标签，支持自定义标签创建/删除
+- 右键书籍: "Set Tag" 子菜单 (带 ✓) + "Remove from Library"
+
+### 书库交互优化
+- 添加 "+" 虚线卡片 (与封面同尺寸)，点击添加新书
+- 修复 "Remove from Library" 无响应 (转发 bookLibrary.objectWillChange)
+
+### 打包发布
+- 生成 macOS .app bundle (Info.plist + 文件类型关联)
+- Universal Binary (arm64 + x86_64)
+- 自定义应用图标 (书本图标 icns)
+- DMG 打包 (含 Applications 快捷方式)

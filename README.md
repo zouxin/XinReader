@@ -8,12 +8,43 @@
 |------|------|
 | 多格式支持 | EPUB (.epub)、MOBI (.mobi/.prc)、PDF (.pdf) |
 | 双页翻页 | 类 NeatReader 分页式双栏布局，滚轮/键盘翻页 |
-| 目录导航 | 左侧边栏显示书籍目录，点击跳转到对应章节 |
+| 目录导航 | 左侧边栏显示书籍目录，点击跳转，每章显示页码和百分比 |
+| 标签分类 | 书库左侧标签栏，支持创建/删除标签，按标签筛选书籍 |
 | 自定义外观 | 字体、字号 (14-32px)、行距 (1.0-2.5) |
 | 四种主题 | 浅色 / 暖纸 / 深色 / 护眼 |
-| 阅读进度 | 自动保存/恢复每本书的阅读位置 |
-| 书库管理 | 记录打开过的书籍，显示封面、标题、作者 |
-| 键盘快捷键 | ← → 翻页、⌘+/⌘- 字号、⌘O 打开文件 |
+| 阅读进度 | 自动保存/恢复每本书的阅读位置，目录栏显示当前页码和百分比 |
+| 书库管理 | 书籍网格展示，封面/标题/作者，右键设置标签或删除 |
+| 键盘快捷键 | ← → ↑ ↓ 翻页、Space/PageUp/PageDown、⌘+/⌘- 字号、⌘O 打开文件 |
+
+## 安装
+
+### DMG 安装（推荐）
+
+```bash
+# 编译 Universal Binary (arm64 + x86_64)
+cd /path/to/XinReader
+swift build -c release --arch arm64 --arch x86_64
+
+# 生成 DMG（见 dist/ 目录下的打包脚本）
+```
+
+或直接使用预编译的 `dist/XinReader.dmg`：
+1. 双击 DMG 挂载
+2. 拖动 `XinReader.app` 到 `Applications`
+3. 从 Launchpad 打开
+
+### 源码运行
+
+```bash
+# 前提：macOS 14+, Xcode Command Line Tools
+cd /path/to/XinReader
+
+swift build    # 编译
+swift run      # 运行
+
+# 或用 Xcode 打开
+open Package.swift
+```
 
 ## 技术架构
 
@@ -24,7 +55,7 @@ XinReader/
 │   └── AppState.swift            # 全局状态管理 (ObservableObject)
 │
 ├── Models/                       # 数据模型
-│   ├── Book.swift                # 书籍元数据 (Codable)
+│   ├── Book.swift                # 书籍元数据 (Codable, 含 tags)
 │   ├── Chapter.swift             # 目录章节节点 (树形结构)
 │   ├── ReaderSettings.swift      # 阅读器外观设置 + 主题定义
 │   └── ReadingProgress.swift     # 阅读进度 (滚动百分比/页码)
@@ -32,7 +63,6 @@ XinReader/
 ├── Parser/                       # 文件解析层
 │   ├── ParsedBook.swift          # 统一解析结果 + BookContent 枚举
 │   ├── BookParser.swift          # 格式检测路由 (MOBI/EPUB/PDF)
-│   │
 │   ├── BinaryReader.swift        # 二进制数据读取工具 (大端序)
 │   ├── PDBHeader.swift           # PDB 头解析
 │   ├── PalmDOCHeader.swift       # PalmDOC 头 (压缩类型)
@@ -59,27 +89,27 @@ XinReader/
 │
 ├── Services/                     # 持久化服务
 │   ├── SettingsStore.swift       # 设置读写 (UserDefaults)
-│   ├── ProgressStore.swift       # 阅读进度 (JSON, ~/Library/Application Support/)
-│   └── BookLibrary.swift         # 书库目录 (library.json)
+│   ├── ProgressStore.swift       # 阅读进度 (JSON, per-book files)
+│   └── BookLibrary.swift         # 书库目录 + 标签管理
 │
 ├── Utilities/                    # 工具类
-│   ├── HTMLCleaner.swift         # HTML 清理 + 分页式双栏 HTML 模板
+│   ├── HTMLCleaner.swift         # HTML 清理 + 分页式双栏 HTML/JS 模板
 │   └── ReaderStyleSheet.swift    # 动态 CSS 生成 (主题/字体/行距)
 │
 ├── Views/                        # SwiftUI 视图层
 │   ├── MainView.swift            # 顶层视图 (书库 ↔ 阅读器切换)
-│   ├── LibraryView.swift         # 书库网格视图
-│   ├── BookCard.swift            # 单本书卡片
+│   ├── LibraryView.swift         # 书库：标签侧栏 + 书籍网格
+│   ├── BookCard.swift            # 单本书卡片 + 添加书卡片
 │   ├── ReaderContentView.swift   # 阅读器主布局 (NavigationSplitView)
-│   ├── SidebarView.swift         # 左侧目录树
+│   ├── SidebarView.swift         # 左侧目录树 + 阅读进度显示
 │   ├── ReaderView.swift          # 渲染引擎切换 (HTML ↔ PDF)
 │   ├── WebContentView.swift      # WKWebView 封装 + ImageSchemeHandler
 │   ├── PDFContentView.swift      # PDFView 封装 (PDFKit)
 │   ├── ReaderToolbar.swift       # 工具栏按钮
 │   └── AppearanceSheet.swift     # 外观设置面板
 │
-└── Resources/                    # 资源文件
-    └── Assets.xcassets
+└── dist/                         # 打包产物
+    └── XinReader.app/            # macOS .app bundle (Universal Binary)
 ```
 
 ## 格式支持详情
@@ -123,30 +153,14 @@ XinReader/
 │          [1 / 42]                           │
 └─────────────────────────────────────────────┘
 
-翻页: container.scrollLeft = page * (clientWidth + columnGap)
+翻页步长: stepWidth = clientWidth + columnGap
+翻页方式: container.scrollLeft = page * stepWidth
 ```
 
-- **翻页步长** = `clientWidth + columnGap`（从 computed style 读取精确 gap 值）
-- **鼠标滚轮**：捕获 wheel 事件，累积 deltaY，超阈值触发翻页
-- **键盘**：← → Space Backspace PageUp PageDown Home End
+- **鼠标滚轮**：单次 wheel 事件直接翻页，250ms 冷却防连发
+- **键盘**：← → ↑ ↓ Space Backspace PageUp PageDown Home End
 - **目录跳转**：临时归零 scrollLeft → 测量 offsetLeft → 算出页码 → 跳转
 - **窗口缩放/字体变化**：保存百分比 → 重算页数 → 恢复到对应页
-
-## 构建和运行
-
-```bash
-# 前提：macOS 14+, Xcode Command Line Tools
-cd /Users/davidzou/MobiReader
-
-# 编译
-swift build
-
-# 运行
-swift run
-
-# 或用 Xcode 打开
-open Package.swift
-```
 
 ## 依赖
 
@@ -162,10 +176,16 @@ open Package.swift
 |------|------|------|
 | 阅读器设置 | UserDefaults (`readerSettings`) | JSON |
 | 书库目录 | `~/Library/Application Support/XinReader/library.json` | JSON |
+| 标签列表 | `~/Library/Application Support/XinReader/tags.json` | JSON |
 | 阅读进度 | `~/Library/Application Support/XinReader/progress/<uuid>.json` | JSON (每书一个文件) |
 
 ## 统计
 
 - **源文件**: 43 个 Swift 文件
-- **代码量**: ~4300 行
+- **代码量**: ~4700 行
 - **外部依赖**: 1 个 (ZIPFoundation)
+- **二进制**: Universal Binary (arm64 + x86_64), ~1.5MB
+
+## License
+
+Apache License 2.0
