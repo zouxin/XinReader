@@ -161,7 +161,8 @@ struct HTMLCleaner {
         (function() {
             var currentPage = 0;
             var totalPages = 1;
-            var stepWidth = 0;          // how many pixels to advance per page turn
+            var stepWidth = 0;
+            var cachedChapterPages = {};
 
             function C() { return document.getElementById('book-content'); }
 
@@ -185,6 +186,36 @@ struct HTMLCleaner {
                 if (currentPage >= totalPages) currentPage = totalPages - 1;
                 if (currentPage < 0) currentPage = 0;
                 showIndicator();
+                calcChapterPages();
+            }
+
+            // Calculate which page each chapter/section lives on.
+            // Called once per recalc, result cached for report().
+            function calcChapterPages() {
+                cachedChapterPages = {};
+                var c = C();
+                if (!c || stepWidth <= 0) return;
+                var saved = c.scrollLeft;
+                c.scrollLeft = 0;
+                void c.scrollWidth;
+                // Gather all identifiable section/heading elements
+                var els = c.querySelectorAll('.epub-section[id], .epub-section[data-href], h1[id], h2[id], h3[id]');
+                for (var i = 0; i < els.length; i++) {
+                    var el = els[i];
+                    var id = el.id || '';
+                    var href = el.getAttribute('data-href') || '';
+                    var fname = el.getAttribute('data-filename') || '';
+                    var bname = el.getAttribute('data-basename') || '';
+                    var left = el.offsetLeft;
+                    var p = el.offsetParent;
+                    while (p && p !== c && p !== document.body) { left += p.offsetLeft; p = p.offsetParent; }
+                    var pg = Math.floor(left / stepWidth);
+                    if (id) cachedChapterPages[id] = pg;
+                    if (href) cachedChapterPages[href] = pg;
+                    if (fname) cachedChapterPages[fname] = pg;
+                    if (bname) cachedChapterPages[bname] = pg;
+                }
+                c.scrollLeft = saved;
             }
 
             function goTo(n) {
@@ -321,31 +352,12 @@ struct HTMLCleaner {
             }
             function report() {
                 try {
-                    // Calculate which page each chapter element is on
-                    var chapPages = {};
-                    var c = C();
-                    if (c && stepWidth > 0) {
-                        var saved = c.scrollLeft;
-                        c.scrollLeft = 0;
-                        void c.scrollWidth;
-                        var secs = c.querySelectorAll('.epub-section[id], h1[id], h2[id], h3[id], [data-href]');
-                        for (var i = 0; i < secs.length; i++) {
-                            var id = secs[i].id || secs[i].getAttribute('data-href') || '';
-                            if (id) {
-                                var left = secs[i].offsetLeft;
-                                var p = secs[i].offsetParent;
-                                while (p && p !== c && p !== document.body) { left += p.offsetLeft; p = p.offsetParent; }
-                                chapPages[id] = Math.floor(left / stepWidth);
-                            }
-                        }
-                        c.scrollLeft = saved;
-                    }
                     window.webkit.messageHandlers.scrollHandler.postMessage({
                         percent: window.getScrollPercent(),
                         anchor: window.getCurrentAnchor(),
                         currentPage: currentPage,
                         totalPages: totalPages,
-                        chapterPages: chapPages
+                        chapterPages: cachedChapterPages
                     });
                 } catch(e){}
             }

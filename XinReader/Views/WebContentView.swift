@@ -110,8 +110,14 @@ struct WebContentView: NSViewRepresentable {
             parent.onScrollChange?(percent, anchor)
             if let p = page, let t = total {
                 var chapMap: [String: Int] = [:]
-                if let rawMap = body["chapterPages"] as? [String: Int] {
-                    chapMap = rawMap
+                if let rawMap = body["chapterPages"] as? [String: Any] {
+                    for (key, val) in rawMap {
+                        if let n = val as? Int {
+                            chapMap[key] = n
+                        } else if let n = (val as? NSNumber)?.intValue {
+                            chapMap[key] = n
+                        }
+                    }
                 }
                 parent.onPageInfo?(p, t, chapMap)
             }

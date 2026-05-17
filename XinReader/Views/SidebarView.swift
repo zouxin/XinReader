@@ -127,23 +127,31 @@ struct ChapterRow: View {
     }
 
     private func findPage() -> Int? {
-        // Direct match on htmlAnchor
-        if let p = chapterPageMap[chapter.htmlAnchor] { return p }
-
-        // Try matching by filename/basename from the anchor
         let anchor = chapter.htmlAnchor
-        let filename = (anchor as NSString).lastPathComponent
+
+        // Direct match on htmlAnchor
+        if let p = chapterPageMap[anchor] { return p }
+
+        // Strip fragment: "chapter1.xhtml#sec1" → "chapter1.xhtml"
+        let pathPart: String
+        if let hashIdx = anchor.firstIndex(of: "#") {
+            pathPart = String(anchor[anchor.startIndex..<hashIdx])
+        } else {
+            pathPart = anchor
+        }
+        if !pathPart.isEmpty, let p = chapterPageMap[pathPart] { return p }
+
+        // Try filename and basename
+        let filename = (pathPart as NSString).lastPathComponent
         let basename = (filename as NSString).deletingPathExtension
 
-        // Scan map keys for match
+        if !filename.isEmpty, let p = chapterPageMap[filename] { return p }
+        if !basename.isEmpty, let p = chapterPageMap[basename] { return p }
+
+        // Fuzzy: scan all keys
         for (key, page) in chapterPageMap {
-            let keyFile = (key as NSString).lastPathComponent
-            let keyBase = (keyFile as NSString).deletingPathExtension
-            if keyFile == filename || keyBase == basename {
-                return page
-            }
-            // epub_ prefixed id
-            if key.hasPrefix("epub_") && key.lowercased().contains(basename.lowercased()) {
+            let keyBase = ((key as NSString).lastPathComponent as NSString).deletingPathExtension
+            if !basename.isEmpty && keyBase.lowercased() == basename.lowercased() {
                 return page
             }
         }
