@@ -13,7 +13,7 @@ struct Book: Identifiable, Codable {
     var publisher: String?
     var coverImageData: Data?
     var format: BookFormat?
-    var tags: [String] = []
+    var tags: [String]
 
     // Timestamps
     var addedDate: Date
@@ -45,5 +45,22 @@ struct Book: Identifiable, Codable {
         self.tags = tags
         self.addedDate = addedDate
         self.lastOpenedDate = lastOpenedDate
+    }
+
+    // Custom Decodable: tolerate missing keys for fields added after initial release
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        fileURL = try container.decode(URL.self, forKey: .fileURL)
+        securityBookmark = try container.decodeIfPresent(Data.self, forKey: .securityBookmark)
+        title = try container.decode(String.self, forKey: .title)
+        author = try container.decode(String.self, forKey: .author)
+        language = try container.decodeIfPresent(String.self, forKey: .language)
+        publisher = try container.decodeIfPresent(String.self, forKey: .publisher)
+        coverImageData = try container.decodeIfPresent(Data.self, forKey: .coverImageData)
+        format = try container.decodeIfPresent(BookFormat.self, forKey: .format)
+        tags = (try? container.decode([String].self, forKey: .tags)) ?? []
+        addedDate = (try? container.decode(Date.self, forKey: .addedDate)) ?? Date()
+        lastOpenedDate = try container.decodeIfPresent(Date.self, forKey: .lastOpenedDate)
     }
 }
