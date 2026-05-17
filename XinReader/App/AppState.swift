@@ -61,8 +61,11 @@ final class AppState: ObservableObject {
                         addedDate: Date(),
                         lastOpenedDate: Date()
                     )
-                    self?.currentBookMeta = bookMeta
                     self?.bookLibrary.addOrUpdate(bookMeta)
+
+                    // Use the library's copy which preserves tags
+                    let storedBook = self?.bookLibrary.books.first(where: { $0.fileURL == url })
+                    self?.currentBookMeta = storedBook ?? bookMeta
                     self?.isLoading = false
 
                     // Select first chapter if available

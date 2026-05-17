@@ -47,6 +47,7 @@ final class BookLibrary: ObservableObject {
     // MARK: - Book Methods
 
     /// Add a new book or update an existing one (by file URL).
+    /// Preserves existing tags and format when updating.
     func addOrUpdate(_ book: Book) {
         if let index = books.firstIndex(where: { $0.fileURL == book.fileURL }) {
             books[index].lastOpenedDate = Date()
@@ -55,6 +56,10 @@ final class BookLibrary: ObservableObject {
             if let cover = book.coverImageData {
                 books[index].coverImageData = cover
             }
+            if let format = book.format, books[index].format == nil {
+                books[index].format = format
+            }
+            // NOTE: tags are intentionally NOT overwritten here
         } else {
             books.append(book)
         }

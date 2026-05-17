@@ -53,6 +53,74 @@ final class BookLibraryTests: XCTestCase {
         XCTAssertEqual(library.books.first?.title, "Updated")
     }
 
+    /// Regression: opening a tagged book must not clear its tags.
+    /// This simulates what AppState.openBook() does — creates a new Book
+    /// with empty tags and calls addOrUpdate. Tags must survive.
+    func testAddOrUpdatePreservesExistingTags() {
+        let book = makeBook(title: "MyBook", path: "/mybook.epub")
+        library.addOrUpdate(book)
+        library.addTag("历史")
+        library.addTag("历史", to: book.id)
+        XCTAssertEqual(library.books.first?.tags, ["历史"])
+
+        // Simulate re-opening the book (AppState creates a new Book with empty tags)
+        let reopened = Book(
+            fileURL: URL(fileURLWithPath: "/mybook.epub"),
+            title: "MyBook",
+            author: "Test Author"
+            // tags defaults to [] — this is the bug scenario
+        )
+        library.addOrUpdate(reopened)
+
+        // Tags must still be there
+        XCTAssertEqual(library.books.count, 1)
+        XCTAssertEqual(library.books.first?.tags, ["历史"])
+    }
+
+    /// Ensure tags survive multiple rounds of addOrUpdate
+    func testAddOrUpdatePreservesTagsMultipleReopens() {
+        let book = makeBook(title: "Book", path: "/book.epub")
+        library.addOrUpdate(book)
+        library.addTag("小说")
+        library.addTag("小说", to: book.id)
+        library.addTag("推荐")
+        library.addTag("推荐", to: book.id)
+
+        // Reopen 3 times
+        for i in 1...3 {
+            let reopened = Book(
+                fileURL: URL(fileURLWithPath: "/book.epub"),
+                title: "Book v\(i)",
+                author: "Author"
+            )
+            library.addOrUpdate(reopened)
+        }
+
+        XCTAssertEqual(library.books.count, 1)
+        XCTAssertEqual(library.books.first?.title, "Book v3") // title updated
+        XCTAssertEqual(Set(library.books.first?.tags ?? []), Set(["小说", "推荐"])) // tags preserved
+    }
+
+    /// Tags survive persistence after addOrUpdate
+    func testTagsSurvivePersistenceAfterReopen() {
+        let book = makeBook(title: "PBook", path: "/pbook.epub")
+        library.addOrUpdate(book)
+        library.addTag("Tech")
+        library.addTag("Tech", to: book.id)
+
+        // Simulate reopen
+        let reopened = Book(
+            fileURL: URL(fileURLWithPath: "/pbook.epub"),
+            title: "PBook",
+            author: "Author"
+        )
+        library.addOrUpdate(reopened)
+
+        // Load from disk
+        let library2 = BookLibrary(baseDirectory: tempDir)
+        XCTAssertEqual(library2.books.first?.tags, ["Tech"])
+    }
+
     func testRemoveBook() {
         let book = makeBook(title: "ToRemove")
         library.addOrUpdate(book)
