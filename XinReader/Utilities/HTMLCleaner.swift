@@ -311,7 +311,9 @@ struct HTMLCleaner {
                 }
                 // if we found the section and there's a fragment, drill in
                 if (el && frag) {
-                    var inner = el.querySelector('#'+frag) || el.querySelector('[name="'+frag+'"]');
+                    // Use getElementById — querySelector('#id') fails if id starts with a digit
+                    var inner = document.getElementById(frag);
+                    if (!inner) { try { inner = el.querySelector('[name="'+frag+'"]'); } catch(e){} }
                     if (inner) return inner;
                 }
                 if (el) return el;
