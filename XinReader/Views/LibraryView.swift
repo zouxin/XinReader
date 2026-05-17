@@ -66,6 +66,12 @@ struct LibraryView: View {
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 20) {
                         AddBookCard {
+                            // If adding from a custom tag view, auto-tag the new book
+                            if let tag = selectedTag, tag != "全部" && tag != "未分类" {
+                                appState.pendingTagForNewBook = tag
+                            } else {
+                                appState.pendingTagForNewBook = nil
+                            }
                             appState.showFileImporter = true
                         }
 

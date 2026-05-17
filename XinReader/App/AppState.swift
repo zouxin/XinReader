@@ -14,6 +14,7 @@ final class AppState: ObservableObject {
     @Published var totalPageCount: Int = 1
     @Published var chapterPageMap: [String: Int] = [:]  // chapterAnchor → page number
     @Published var lastReadBook: Book?                   // last book before returning to library
+    var pendingTagForNewBook: String?                    // auto-tag new books added from a tag view
 
     let settingsStore = SettingsStore()
     let progressStore = ProgressStore()
@@ -62,6 +63,13 @@ final class AppState: ObservableObject {
                         lastOpenedDate: Date()
                     )
                     self?.bookLibrary.addOrUpdate(bookMeta)
+
+                    // Auto-tag if added from a specific tag view
+                    if let tag = self?.pendingTagForNewBook,
+                       let storedID = self?.bookLibrary.books.first(where: { $0.fileURL.standardizedFileURL.path == url.standardizedFileURL.path })?.id {
+                        self?.bookLibrary.addTag(tag, to: storedID)
+                        self?.pendingTagForNewBook = nil
+                    }
 
                     // Use the library's copy which preserves tags
                     let urlPath = url.standardizedFileURL.path
